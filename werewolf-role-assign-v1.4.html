@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<title>月隐之夜 · 狼人杀角色分配</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0d16;
+    --panel: #131826;
+    --panel-2: #10141f;
+    --border: rgba(201,211,224,0.12);
+    --border-strong: rgba(201,211,224,0.22);
+    --ink: #c9d3e0;
+    --ink-dim: #7c8698;
+    --blood: #8c2f2f;
+    --blood-bright: #a83a3a;
+    --gold: #c9a227;
+    --gold-dim: #9c8144;
+    --radius: 10px;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(140,47,47,0.14), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 90% 10%, rgba(201,162,39,0.06), transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    font-family: 'Manrope', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap{
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 56px 20px 80px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(80px, env(safe-area-inset-bottom));
+  }
+
+  button{
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* ---------- Header ---------- */
+  .moon{
+    width: 34px; height:34px;
+    display:block;
+    margin: 0 auto 18px;
+    opacity: 0.9;
+  }
+  h1{
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 44px;
+    text-align:center;
+    letter-spacing: 0.02em;
+    margin: 0 0 6px;
+    color: #eef1f6;
+  }
+  .subtitle{
+    text-align:center;
+    color: var(--ink-dim);
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    margin-bottom: 44px;
+  }
+
+  /* ---------- Panel ---------- */
+  .panel{
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+  }
+  .panel + .panel{ margin-top: 20px; }
+
+  .section-label{
+    font-size: 13px;
+    color: var(--ink-dim);
+    margin-bottom: 10px;
+    display:flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .section-label .count{ color: var(--gold-dim); font-variant-numeric: tabular-nums; }
+
+  textarea{
+    width:100%;
+    min-height: 150px;
+    resize: vertical;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    padding: 14px 16px;
+  }
+  textarea:focus, button:focus-visible, .role-btn:focus-visible{
+    outline: 2px solid var(--gold-dim);
+    outline-offset: 2px;
+  }
+  textarea::placeholder{ color: #4d5666; }
+
+  .hint{ font-size: 12.5px; color: var(--ink-dim); margin-top: 8px; }
+
+  /* ---------- Role config ---------- */
+  .role-grid{
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 22px;
+  }
+  @media (max-width: 560px){ .role-grid{ grid-template-columns: 1fr; } }
+
+  .role-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.015);
+  }
+  .role-row .name{ font-size: 14.5px; }
+  .role-row .name .icon{ margin-right: 8px; }
+
+  .stepper{ display:flex; align-items:center; gap: 10px; }
+  .stepper button{
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: rgba(255,255,255,0.03);
+    color: var(--ink);
+    font-size: 16px;
+    cursor:pointer;
+    line-height: 1;
+    display:flex; align-items:center; justify-content:center;
+    user-select: none;
+  }
+  .stepper button:hover{ border-color: var(--gold-dim); color: var(--gold); }
+  .stepper .val{ min-width: 16px; text-align:center; font-variant-numeric: tabular-nums; }
+
+  .villager-row{
+    margin-top: 12px;
+    display:flex;
+    justify-content: space-between;
+    font-size: 13.5px;
+    color: var(--ink-dim);
+    padding: 0 4px;
+  }
+  .villager-row b{ color: var(--ink); font-weight: 600; }
+
+  .checkbox-row{
+    display:flex;
+    align-items:center;
+    gap: 9px;
+    margin-top: 14px;
+    padding: 0 4px;
+    font-size: 13.5px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .checkbox-row input{
+    width: 16px; height: 16px;
+    accent-color: var(--gold-dim);
+    cursor: pointer;
+  }
+
+  .error{
+    margin-top: 16px;
+    font-size: 13.5px;
+    color: #d98a8a;
+    border-left: 2px solid var(--blood-bright);
+    padding-left: 10px;
+    display:none;
+  }
+  .error.show{ display:block; }
+
+  /* ---------- Buttons ---------- */
+  .primary-btn{
+    display:block;
+    width:100%;
+    margin-top: 28px;
+    padding: 14px;
+    background: linear-gradient(180deg, var(--blood-bright), var(--blood));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: #f5e9e9;
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: filter 0.15s ease;
+  }
+  .primary-btn:hover{ filter: brightness(1.1); }
+  .primary-btn:disabled{ opacity: 0.4; cursor:not-allowed; filter:none; }
+
+  .ghost-btn{
+    display:inline-block;
+    padding: 10px 18px;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+    font-size: 13.5px;
+    cursor:pointer;
+  }
+  .ghost-btn:hover{ border-color: var(--gold-dim); color: var(--gold); }
+  .ghost-btn.danger{ color: #d98a8a; border-color: rgba(168,58,58,0.35); }
+  .ghost-btn.danger:hover{ border-color: var(--blood-bright); color: #f0a3a3; }
+
+  /* ---------- Results ---------- */
+  #resultScreen{ display:none; }
+  .result-toolbar{
+    margin-bottom: 18px;
+  }
+  .result-toolbar p{ margin: 0 0 14px; font-size: 13.5px; color: var(--ink-dim); }
+  .toolbar-actions{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .reset-help{
+    margin-bottom: 22px;
+    font-size: 12.5px;
+    color: var(--ink-dim);
+  }
+  .reset-help summary{
+    cursor:pointer;
+    color: var(--gold-dim);
+    user-select: none;
+  }
+  .reset-help summary:hover{ color: var(--gold); }
+  .reset-help ul{
+    margin: 10px 0 0;
+    padding-left: 18px;
+    line-height: 1.7;
+  }
+  .reset-help b{ color: var(--ink); }
+
+  .card-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+  }
+
+  .card-scene{ perspective: 1000px; }
+  .card-btn{
+    all: unset;
+    display:block;
+    width:100%;
+    aspect-ratio: 3 / 4.3;
+    cursor:pointer;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .card-inner{
+    position:relative;
+    width:100%; height:100%;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(.2,.8,.2,1);
+  }
+  .card-btn[aria-pressed="true"] .card-inner{ transform: rotateY(180deg); }
+
+  .card-face{
+    position:absolute; inset:0;
+    border-radius: 10px;
+    backface-visibility: hidden;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding: 14px 10px;
+    text-align:center;
+  }
+
+  .card-back{
+    background:
+      radial-gradient(circle at 50% 38%, rgba(201,162,39,0.10), transparent 55%),
+      linear-gradient(160deg, #171d2c, #0d1119);
+    border: 1px solid var(--border-strong);
+  }
+  .card-back .glyph{ font-size: 26px; opacity:0.8; margin-bottom: 10px; }
+  .card-back .pname{
+    font-size: 13.5px;
+    font-weight:600;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-back .tap{ font-size: 11px; color: var(--ink-dim); margin-top: 6px; letter-spacing: 0.03em; }
+
+  .card-front{
+    background: linear-gradient(160deg, #1a2032, #10141f);
+    border: 1px solid var(--role-color, var(--border-strong));
+    transform: rotateY(180deg);
+  }
+  .card-front .icon{ font-size: 28px; margin-bottom: 10px; }
+  .card-front .countdown{
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 10.5px;
+    color: var(--gold);
+    background: rgba(201,162,39,0.14);
+    border: 1px solid rgba(201,162,39,0.32);
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+  .card-front .rname{
+    font-family:'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--role-color, #eef1f6);
+    margin-bottom: 8px;
+  }
+  .card-front .rdesc{ font-size: 11.5px; line-height:1.5; color: var(--ink-dim); }
+  .card-front .rowner{
+    font-size: 11px;
+    color: var(--ink-dim);
+    margin-top: 10px;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+    width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card-inner{ transition: none; }
+  }
+
+  footer{
+    text-align:center;
+    margin-top: 40px;
+    font-size: 12px;
+    color: #4d5666;
+  }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position: fixed;
+    left: 50%;
+    bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
+    transform: translateX(-50%) translateY(8px);
+    background: linear-gradient(180deg, #1c2333, #141a28);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 10px 20px;
+    font-size: 13.5px;
+    color: var(--ink);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    z-index: 50;
+    white-space: nowrap;
+  }
+  .toast.show{
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast .dot{
+    display:inline-block;
+    width:6px; height:6px;
+    border-radius:50%;
+    background: var(--gold);
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .toast{ transition: opacity 0.35s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <svg class="moon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" stroke="#c9a227" stroke-width="1.2"/>
+  </svg>
+  <h1>月隐之夜</h1>
+  <p class="subtitle">狼人杀 · 角色随机分配</p>
+
+  <!-- ============ 设置界面 ============ -->
+  <div id="setupScreen">
+    <div class="panel">
+      <div class="section-label">
+        <span>玩家名单（每行一位）</span>
+        <span class="count" id="playerCount">0 人</span>
+      </div>
+      <textarea id="playerInput" placeholder="张三&#10;李四&#10;王五&#10;..."></textarea>
+      <p class="hint">按回车换行，添加新玩家；空行会被自动忽略。</p>
+      <p class="error" id="nameError"></p>
+    </div>
+
+    <div class="panel">
+      <div class="section-label"><span>特殊角色人数</span></div>
+
+      <div class="role-grid" id="roleGrid"></div>
+
+      <div class="villager-row">
+        <span>剩余自动分配为「平民」</span>
+        <span><b id="villagerCount">0</b> 人</span>
+      </div>
+
+      <label class="checkbox-row" for="requireVillagerToggle">
+        <input type="checkbox" id="requireVillagerToggle">
+        <span>至少保留 1 名平民（可选规则）</span>
+      </label>
+
+      <p class="error" id="errorMsg"></p>
+
+      <button class="primary-btn" id="assignBtn" disabled>开始分配角色</button>
+    </div>
+  </div>
+
+  <!-- ============ 结果界面 ============ -->
+  <div id="resultScreen">
+    <div class="result-toolbar">
+      <p>轮流传递设备，同一时间只会展开一张卡片；点开新的一张，上一张会自动盖回去。</p>
+      <div class="toolbar-actions">
+        <button class="ghost-btn" id="reshuffleBtn">重新洗牌</button>
+        <button class="ghost-btn" id="backToSetupBtn">返回设置</button>
+        <button class="ghost-btn danger" id="clearAllBtn">清空全部</button>
+      </div>
+    </div>
+    <details class="reset-help">
+      <summary>这三个按钮有什么区别？</summary>
+      <ul>
+        <li><b>重新洗牌</b>：沿用当前名单和角色配置，立即重新随机分配一次。</li>
+        <li><b>返回设置</b>：回到设置页，名单和角色人数都会保留，可以改完再分配。</li>
+        <li><b>清空全部</b>：清空名单和所有配置，从头开始（会二次确认）。</li>
+      </ul>
+    </details>
+    <div class="card-grid" id="cardGrid"></div>
+  </div>
+
+  <footer>本地随机分配 · 不联网、不记录 · 关闭页面即清空</footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  const ROLES = {
+    werewolf: { name:'狼人', icon:'🐺', color:'#c1585c', desc:'夜晚苏醒，与同伴共同猎杀一名玩家。' },
+    seer:     { name:'预言家', icon:'🔮', color:'#c9a227', desc:'每晚可查验一名玩家的真实身份。' },
+    witch:    { name:'女巫', icon:'🧪', color:'#c9a227', desc:'持解药与毒药各一瓶，整局限用一次。' },
+    hunter:   { name:'猎人', icon:'🏹', color:'#c9a227', desc:'出局时可开枪带走场上一名玩家。' },
+    villager: { name:'平民', icon:'🕯️', color:'#c9d3e0', desc:'没有技能，靠观察与发言找出狼人。' }
+  };
+  // 显示顺序：特殊角色在前，平民固定在最后自动计算
+  const CONFIGURABLE = ['werewolf', 'seer', 'witch', 'hunter'];
+  const counts = { werewolf: 1, seer: 1, witch: 1, hunter: 1 };
+  const MAX_NAME_LENGTH = 16;
+  const AUTO_CLOSE_SECONDS = 5;
+
+  const playerInput = document.getElementById('playerInput');
+  const playerCountEl = document.getElementById('playerCount');
+  const roleGrid = document.getElementById('roleGrid');
+  const villagerCountEl = document.getElementById('villagerCount');
+  const requireVillagerToggle = document.getElementById('requireVillagerToggle');
+  const errorMsg = document.getElementById('errorMsg');
+  const nameError = document.getElementById('nameError');
+  const assignBtn = document.getElementById('assignBtn');
+
+  function getPlayers(){
+    return playerInput.value.split('\n').map(s => s.trim()).filter(Boolean);
+  }
+
+  // 找出重复的玩家名（忽略大小写，但保留原始写法用于提示）
+  function findDuplicateNames(players){
+    const seenCount = {};
+    players.forEach(p => {
+      const key = p.toLowerCase();
+      seenCount[key] = (seenCount[key] || 0) + 1;
+    });
+    const dupeKeys = Object.keys(seenCount).filter(key => seenCount[key] > 1);
+    return dupeKeys.map(key => players.find(p => p.toLowerCase() === key));
+  }
+
+  // 汇总名单本身的问题：重复 / 过长
+  function collectNameIssues(players){
+    const issues = [];
+    const dupes = findDuplicateNames(players);
+    if (dupes.length){
+      issues.push(`名字重复：${dupes.join('、')}（同名会导致无法辨认是谁的身份卡）`);
+    }
+    const tooLong = players.filter(p => p.length > MAX_NAME_LENGTH);
+    if (tooLong.length){
+      issues.push(`名字过长（超过 ${MAX_NAME_LENGTH} 个字符）：${tooLong.join('、')}`);
+    }
+    return issues;
+  }
+
+  function renderRoleGrid(){
+    roleGrid.innerHTML = '';
+    CONFIGURABLE.forEach(key => {
+      const role = ROLES[key];
+      const row = document.createElement('div');
+      row.className = 'role-row';
+      row.innerHTML = `
+        <span class="name"><span class="icon">${role.icon}</span>${role.name}</span>
+        <span class="stepper">
+          <button type="button" data-role="${key}" data-dir="-1" aria-label="减少${role.name}人数">−</button>
+          <span class="val" id="val-${key}">${counts[key]}</span>
+          <button type="button" data-role="${key}" data-dir="1" aria-label="增加${role.name}人数">+</button>
+        </span>`;
+      roleGrid.appendChild(row);
+    });
+    roleGrid.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.role;
+        const dir = parseInt(btn.dataset.dir, 10);
+        counts[key] = Math.max(0, counts[key] + dir);
+        document.getElementById(`val-${key}`).textContent = counts[key];
+        validate();
+      });
+    });
+  }
+
+  function validate(){
+    const players = getPlayers();
+    playerCountEl.textContent = players.length + ' 人';
+
+    const specialTotal = CONFIGURABLE.reduce((sum, k) => sum + counts[k], 0);
+    const villagerTotal = players.length - specialTotal;
+    villagerCountEl.textContent = Math.max(villagerTotal, 0);
+
+    // 名单本身的问题（重复 / 过长），提示在名单下方
+    const nameIssues = collectNameIssues(players);
+    if (nameIssues.length){
+      nameError.innerHTML = nameIssues.map(escapeHtml).join('<br>');
+      nameError.classList.add('show');
+    } else {
+      nameError.classList.remove('show');
+    }
+
+    errorMsg.classList.remove('show');
+    assignBtn.disabled = false;
+
+    const requireVillager = requireVillagerToggle.checked;
+
+    if (players.length < 4){
+      errorMsg.textContent = '至少需要 4 名玩家才能开始分配。';
+      errorMsg.classList.add('show');
+      assignBtn.disabled = true;
+    } else if (nameIssues.length){
+      assignBtn.disabled = true;
+    } else if (villagerTotal < 0){
+      errorMsg.textContent = `特殊角色共 ${specialTotal} 人，超过了玩家总数（${players.length} 人），请减少特殊角色数量。`;
+      errorMsg.classList.add('show');
+      assignBtn.disabled = true;
+    } else if (counts.werewolf < 1){
+      errorMsg.textContent = '狼人至少需要 1 人。';
+      errorMsg.classList.add('show');
+      assignBtn.disabled = true;
+    } else if (requireVillager && villagerTotal < 1){
+      errorMsg.textContent = '已开启"至少保留 1 名平民"规则，请减少特殊角色人数腾出至少 1 个平民名额。';
+      errorMsg.classList.add('show');
+      assignBtn.disabled = true;
+    }
+    return !assignBtn.disabled;
+  }
+
+  playerInput.addEventListener('input', validate);
+  requireVillagerToggle.addEventListener('change', validate);
+  renderRoleGrid();
+  validate();
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildRoleDeck(playerCount){
+    const deck = [];
+    CONFIGURABLE.forEach(key => {
+      for (let i = 0; i < counts[key]; i++) deck.push(key);
+    });
+    while (deck.length < playerCount) deck.push('villager');
+    return deck;
+  }
+
+  const setupScreen = document.getElementById('setupScreen');
+  const resultScreen = document.getElementById('resultScreen');
+  const cardGrid = document.getElementById('cardGrid');
+
+  // 同一时间只允许一张卡片处于展开状态，且展开有时限，防止身份被旁人多看到
+  let openCardBtn = null;
+  let openCardTimer = null;
+
+  // 统一清除倒计时定时器（不涉及 DOM 状态）
+  function clearOpenCardTimer(){
+    if (openCardTimer){
+      clearInterval(openCardTimer);
+      openCardTimer = null;
+    }
+  }
+
+  // 盖回当前展开的卡片（若有），并清除其倒计时
+  function closeOpenCard(){
+    if (openCardBtn){
+      openCardBtn.setAttribute('aria-pressed', 'false');
+    }
+    clearOpenCardTimer();
+    openCardBtn = null;
+  }
+
+  function updateCountdownText(btn, seconds){
+    const el = btn.querySelector('.countdown');
+    if (el) el.textContent = `${seconds} 秒后盖回`;
+  }
+
+  // 展开一张卡片并启动限时倒计时，到时自动盖回
+  function openCard(btn){
+    btn.setAttribute('aria-pressed', 'true');
+    openCardBtn = btn;
+    let remaining = AUTO_CLOSE_SECONDS;
+    updateCountdownText(btn, remaining);
+    openCardTimer = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0){
+        closeOpenCard();
+      } else {
+        updateCountdownText(btn, remaining);
+      }
+    }, 1000);
+  }
+
+  function renderCards(assignments){
+    closeOpenCard(); // 渲染新一批卡片前，确保没有遗留的展开状态或计时器
+    cardGrid.innerHTML = '';
+    assignments.forEach(({ name, roleKey }) => {
+      const role = ROLES[roleKey];
+      const scene = document.createElement('div');
+      scene.className = 'card-scene';
+      scene.innerHTML = `
+        <button class="card-btn" aria-pressed="false" aria-label="查看 ${escapeHtml(name)} 的身份">
+          <div class="card-inner">
+            <div class="card-face card-back">
+              <div class="glyph">☾</div>
+              <div class="pname">${escapeHtml(name)}</div>
+              <div class="tap">点击查看身份（5 秒后自动盖回）</div>
+            </div>
+            <div class="card-face card-front" style="--role-color:${role.color}">
+              <div class="countdown">${AUTO_CLOSE_SECONDS} 秒后盖回</div>
+              <div class="icon">${role.icon}</div>
+              <div class="rname">${role.name}</div>
+              <div class="rdesc">${role.desc}</div>
+              <div class="rowner">${escapeHtml(name)}</div>
+            </div>
+          </div>
+        </button>`;
+      const btn = scene.querySelector('.card-btn');
+      btn.addEventListener('click', () => {
+        const isOpen = btn.getAttribute('aria-pressed') === 'true';
+        if (isOpen){
+          // 手动提前盖回
+          closeOpenCard();
+        } else {
+          // 打开新卡片前，先立即盖回并清除上一张的计时器，避免旧计时器误关新卡片
+          closeOpenCard();
+          openCard(btn);
+        }
+      });
+      cardGrid.appendChild(scene);
+    });
+  }
+
+
+  const toastEl = document.getElementById('toast');
+  let toastTimer = null;
+
+  function showToast(message){
+    toastEl.innerHTML = `<span class="dot"></span>${escapeHtml(message)}`;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toastEl.classList.remove('show');
+    }, 2200);
+  }
+
+  function generateAndShowResults(){
+    const players = getPlayers();
+    const deck = shuffle(buildRoleDeck(players.length));
+    const assignments = players.map((name, i) => ({ name, roleKey: deck[i] }));
+    renderCards(assignments);
+    setupScreen.style.display = 'none';
+    resultScreen.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  assignBtn.addEventListener('click', () => {
+    if (!validate()) return;
+    generateAndShowResults();
+  });
+
+  // 重新洗牌：沿用同一份名单和配置，立即重新随机分配
+  document.getElementById('reshuffleBtn').addEventListener('click', () => {
+    generateAndShowResults();
+    showToast('已重新洗牌');
+  });
+
+  // 返回设置：仅切换界面，名单和角色配置原样保留
+  document.getElementById('backToSetupBtn').addEventListener('click', () => {
+    closeOpenCard(); // 离开结果页前清除展开状态与倒计时，避免计时器在后台继续运行
+    resultScreen.style.display = 'none';
+    setupScreen.style.display = 'block';
+  });
+
+  // 清空全部：清空名单和角色配置，需二次确认防止误触
+  document.getElementById('clearAllBtn').addEventListener('click', () => {
+    const confirmed = window.confirm('确定要清空所有名单和角色设置吗？此操作无法撤销。');
+    if (!confirmed) return;
+    closeOpenCard(); // 同样清除展开状态与倒计时
+    playerInput.value = '';
+    counts.werewolf = 1; counts.seer = 1; counts.witch = 1; counts.hunter = 1;
+    requireVillagerToggle.checked = false;
+    renderRoleGrid();
+    resultScreen.style.display = 'none';
+    setupScreen.style.display = 'block';
+    validate();
+  });
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>
