@@ -399,42 +399,66 @@
   @media (prefers-reduced-motion: reduce){
     .toast{ transition: opacity 0.35s ease; }
   }
+
+  /* ---------- Language toggle ---------- */
+  .lang-toggle{
+    position: fixed;
+    top: max(16px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
+    z-index: 60;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: rgba(19,24,38,0.85);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .lang-toggle:hover{ border-color: var(--gold-dim); color: var(--gold); }
 </style>
 </head>
 <body>
+<button type="button" class="lang-toggle" id="langToggle" aria-label="切换到英文显示">EN</button>
 <div class="wrap">
 
   <svg class="moon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" stroke="#c9a227" stroke-width="1.2"/>
   </svg>
-  <h1>月隐之夜</h1>
-  <p class="subtitle">狼人杀 · 角色随机分配</p>
+  <h1 id="pageTitle">月隐之夜</h1>
+  <p class="subtitle" id="pageSubtitle">狼人杀 · 角色随机分配</p>
 
   <!-- ============ 设置界面 ============ -->
   <div id="setupScreen">
     <div class="panel">
       <div class="section-label">
-        <span>玩家名单（每行一位）</span>
+        <span id="playerListLabel">玩家名单（每行一位）</span>
         <span class="count" id="playerCount">0 人</span>
       </div>
       <textarea id="playerInput" placeholder="张三&#10;李四&#10;王五&#10;..."></textarea>
-      <p class="hint">按回车换行，添加新玩家；空行会被自动忽略。</p>
+      <p class="hint" id="playerHint">按回车换行，添加新玩家；空行会被自动忽略。</p>
       <p class="error" id="nameError"></p>
     </div>
 
     <div class="panel">
-      <div class="section-label"><span>特殊角色人数</span></div>
+      <div class="section-label"><span id="roleConfigLabel">特殊角色人数</span></div>
 
       <div class="role-grid" id="roleGrid"></div>
 
       <div class="villager-row">
-        <span>剩余自动分配为「平民」</span>
-        <span><b id="villagerCount">0</b> 人</span>
+        <span id="villagerRowLabel">剩余自动分配为「平民」</span>
+        <b id="villagerCount">0 人</b>
       </div>
 
       <label class="checkbox-row" for="requireVillagerToggle">
         <input type="checkbox" id="requireVillagerToggle">
-        <span>至少保留 1 名平民（可选规则）</span>
+        <span id="requireVillagerLabel">至少保留 1 名平民（可选规则）</span>
       </label>
 
       <p class="error" id="errorMsg"></p>
@@ -446,7 +470,7 @@
   <!-- ============ 结果界面 ============ -->
   <div id="resultScreen">
     <div class="result-toolbar">
-      <p>轮流传递设备，同一时间只会展开一张卡片；点开新的一张，上一张会自动盖回去。</p>
+      <p id="resultHint">轮流传递设备，同一时间只会展开一张卡片；点开新的一张，上一张会自动盖回去。</p>
       <div class="toolbar-actions">
         <button class="ghost-btn" id="reshuffleBtn">重新洗牌</button>
         <button class="ghost-btn" id="backToSetupBtn">返回设置</button>
@@ -454,34 +478,135 @@
       </div>
     </div>
     <details class="reset-help">
-      <summary>这三个按钮有什么区别？</summary>
+      <summary id="helpSummary">这三个按钮有什么区别？</summary>
       <ul>
-        <li><b>重新洗牌</b>：沿用当前名单和角色配置，立即重新随机分配一次。</li>
-        <li><b>返回设置</b>：回到设置页，名单和角色人数都会保留，可以改完再分配。</li>
-        <li><b>清空全部</b>：清空名单和所有配置，从头开始（会二次确认）。</li>
+        <li><b id="helpReshuffleTitle">重新洗牌</b><span id="helpReshuffleDesc">：沿用当前名单和角色配置，立即重新随机分配一次。</span></li>
+        <li><b id="helpBackTitle">返回设置</b><span id="helpBackDesc">：回到设置页，名单和角色人数都会保留，可以改完再分配。</span></li>
+        <li><b id="helpClearTitle">清空全部</b><span id="helpClearDesc">：清空名单和所有配置，从头开始（会二次确认）。</span></li>
       </ul>
     </details>
     <div class="card-grid" id="cardGrid"></div>
   </div>
 
-  <footer>本地随机分配 · 不联网、不记录 · 关闭页面即清空</footer>
+  <footer id="footerText">本地随机分配 · 不联网、不记录 · 关闭页面即清空</footer>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
   const ROLES = {
-    werewolf: { name:'狼人', icon:'🐺', color:'#c1585c', desc:'夜晚苏醒，与同伴共同猎杀一名玩家。' },
-    seer:     { name:'预言家', icon:'🔮', color:'#c9a227', desc:'每晚可查验一名玩家的真实身份。' },
-    witch:    { name:'女巫', icon:'🧪', color:'#c9a227', desc:'持解药与毒药各一瓶，整局限用一次。' },
-    hunter:   { name:'猎人', icon:'🏹', color:'#c9a227', desc:'出局时可开枪带走场上一名玩家。' },
-    villager: { name:'平民', icon:'🕯️', color:'#c9d3e0', desc:'没有技能，靠观察与发言找出狼人。' }
+    werewolf: { icon:'🐺', color:'#c1585c',
+      name:{ zh:'狼人', en:'Werewolf' },
+      desc:{ zh:'夜晚苏醒，与同伴共同猎杀一名玩家。', en:'Wake at night and hunt a player together with your pack.' } },
+    seer: { icon:'🔮', color:'#c9a227',
+      name:{ zh:'预言家', en:'Seer' },
+      desc:{ zh:'每晚可查验一名玩家的真实身份。', en:"Each night, inspect one player's true identity." } },
+    witch: { icon:'🧪', color:'#c9a227',
+      name:{ zh:'女巫', en:'Witch' },
+      desc:{ zh:'持解药与毒药各一瓶，整局限用一次。', en:'Holds one healing potion and one poison, each usable once per game.' } },
+    hunter: { icon:'🏹', color:'#c9a227',
+      name:{ zh:'猎人', en:'Hunter' },
+      desc:{ zh:'出局时可开枪带走场上一名玩家。', en:'When eliminated, may shoot and take another player down.' } },
+    villager: { icon:'🕯️', color:'#c9d3e0',
+      name:{ zh:'平民', en:'Villager' },
+      desc:{ zh:'没有技能，靠观察与发言找出狼人。', en:'No special power — find the werewolves through observation and discussion.' } }
   };
   // 显示顺序：特殊角色在前，平民固定在最后自动计算
   const CONFIGURABLE = ['werewolf', 'seer', 'witch', 'hunter'];
   const counts = { werewolf: 1, seer: 1, witch: 1, hunter: 1 };
   const MAX_NAME_LENGTH = 16;
   const AUTO_CLOSE_SECONDS = 5;
+
+  // ---------- 中英文界面文案 ----------
+  const STRINGS = {
+    zh: {
+      htmlLang: 'zh-CN',
+      pageTitle: '月隐之夜',
+      pageSubtitle: '狼人杀 · 角色随机分配',
+      playerListLabel: '玩家名单（每行一位）',
+      playerPlaceholder: '张三\n李四\n王五\n...',
+      playerHint: '按回车换行，添加新玩家；空行会被自动忽略。',
+      roleConfigLabel: '特殊角色人数',
+      decreaseAria: (name) => `减少${name}人数`,
+      increaseAria: (name) => `增加${name}人数`,
+      villagerRowLabel: '剩余自动分配为「平民」',
+      requireVillagerLabel: '至少保留 1 名平民（可选规则）',
+      assignBtn: '开始分配角色',
+      resultHint: '轮流传递设备，同一时间只会展开一张卡片；点开新的一张，上一张会自动盖回去。',
+      reshuffleBtn: '重新洗牌',
+      backToSetupBtn: '返回设置',
+      clearAllBtn: '清空全部',
+      helpSummary: '这三个按钮有什么区别？',
+      helpReshuffleTitle: '重新洗牌',
+      helpReshuffleDesc: '：沿用当前名单和角色配置，立即重新随机分配一次。',
+      helpBackTitle: '返回设置',
+      helpBackDesc: '：回到设置页，名单和角色人数都会保留，可以改完再分配。',
+      helpClearTitle: '清空全部',
+      helpClearDesc: '：清空名单和所有配置，从头开始（会二次确认）。',
+      footer: '本地随机分配 · 不联网、不记录 · 关闭页面即清空',
+      cardTap: '点击查看身份（5 秒后自动盖回）',
+      cardViewAria: (name) => `查看 ${name} 的身份`,
+      formatCountdown: (s) => `${s} 秒后盖回`,
+      formatPlayerCount: (n) => `${n} 人`,
+      formatVillagerCount: (n) => `${n} 人`,
+      toastReshuffled: '已重新洗牌',
+      confirmClear: '确定要清空所有名单和角色设置吗？此操作无法撤销。',
+      langToggleLabel: 'EN',
+      langToggleAria: '切换到英文显示',
+      errMinPlayers: '至少需要 4 名玩家才能开始分配。',
+      errTooManySpecial: (specialTotal, playerCount) => `特殊角色共 ${specialTotal} 人，超过了玩家总数（${playerCount} 人），请减少特殊角色数量。`,
+      errMinWerewolf: '狼人至少需要 1 人。',
+      errRequireVillager: '已开启"至少保留 1 名平民"规则，请减少特殊角色人数腾出至少 1 个平民名额。',
+      errDupNames: (names) => `名字重复：${names.join('、')}（同名会导致无法辨认是谁的身份卡）`,
+      errLongNames: (max, names) => `名字过长（超过 ${max} 个字符）：${names.join('、')}`
+    },
+    en: {
+      htmlLang: 'en',
+      pageTitle: 'Moonless Night',
+      pageSubtitle: 'Werewolf · Random Role Assignment',
+      playerListLabel: 'Player list (one per line)',
+      playerPlaceholder: 'Alice\nBob\nCarol\n...',
+      playerHint: 'Press Enter for a new line to add players; blank lines are ignored.',
+      roleConfigLabel: 'Special role counts',
+      decreaseAria: (name) => `Decrease ${name} count`,
+      increaseAria: (name) => `Increase ${name} count`,
+      villagerRowLabel: 'Remaining players become "Villager"',
+      requireVillagerLabel: 'Keep at least 1 Villager (optional rule)',
+      assignBtn: 'Assign Roles',
+      resultHint: 'Pass the device around — only one card can be open at a time; opening a new one flips the last one face-down.',
+      reshuffleBtn: 'Reshuffle',
+      backToSetupBtn: 'Back to Setup',
+      clearAllBtn: 'Clear All',
+      helpSummary: "What's the difference between these buttons?",
+      helpReshuffleTitle: 'Reshuffle',
+      helpReshuffleDesc: ': keeps the same list and settings, and randomizes roles again instantly.',
+      helpBackTitle: 'Back to Setup',
+      helpBackDesc: ': returns to the setup page — your list and role counts stay as they are, so you can edit and assign again.',
+      helpClearTitle: 'Clear All',
+      helpClearDesc: ': wipes the list and all settings to start over (asks for confirmation).',
+      footer: 'Assigned locally · No network, no logging · Closing the page clears everything',
+      cardTap: 'Tap to reveal (auto-hides after 5s)',
+      cardViewAria: (name) => `View ${name}'s role`,
+      formatCountdown: (s) => `${s}s left`,
+      formatPlayerCount: (n) => `${n} ${n === 1 ? 'player' : 'players'}`,
+      formatVillagerCount: (n) => `${n}`,
+      toastReshuffled: 'Reshuffled',
+      confirmClear: 'Clear the whole player list and role settings? This cannot be undone.',
+      langToggleLabel: '中文',
+      langToggleAria: '切换到中文显示',
+      errMinPlayers: 'You need at least 4 players to start.',
+      errTooManySpecial: (specialTotal, playerCount) => `Special roles total ${specialTotal}, more than the ${playerCount} players. Please reduce special role counts.`,
+      errMinWerewolf: 'At least 1 Werewolf is required.',
+      errRequireVillager: '"Keep at least 1 Villager" is on — reduce special role counts to free up a Villager slot.',
+      errDupNames: (names) => `Duplicate names: ${names.join(', ')} (identical names make it impossible to tell whose card is whose)`,
+      errLongNames: (max, names) => `Names too long (over ${max} characters): ${names.join(', ')}`
+    }
+  };
+
+  let currentLang = 'zh';
+  function t(){ return STRINGS[currentLang]; }
+  function roleName(key){ return ROLES[key].name[currentLang]; }
+  function roleDesc(key){ return ROLES[key].desc[currentLang]; }
 
   const playerInput = document.getElementById('playerInput');
   const playerCountEl = document.getElementById('playerCount');
@@ -491,6 +616,30 @@
   const errorMsg = document.getElementById('errorMsg');
   const nameError = document.getElementById('nameError');
   const assignBtn = document.getElementById('assignBtn');
+
+  // 静态文案元素引用（用于语言切换时整体刷新）
+  const pageTitleEl = document.getElementById('pageTitle');
+  const pageSubtitleEl = document.getElementById('pageSubtitle');
+  const playerListLabelEl = document.getElementById('playerListLabel');
+  const playerHintEl = document.getElementById('playerHint');
+  const roleConfigLabelEl = document.getElementById('roleConfigLabel');
+  const villagerRowLabelEl = document.getElementById('villagerRowLabel');
+  const requireVillagerLabelEl = document.getElementById('requireVillagerLabel');
+  const resultHintEl = document.getElementById('resultHint');
+  const reshuffleBtnEl = document.getElementById('reshuffleBtn');
+  const backToSetupBtnEl = document.getElementById('backToSetupBtn');
+  const clearAllBtnEl = document.getElementById('clearAllBtn');
+  const helpSummaryEl = document.getElementById('helpSummary');
+  const helpReshuffleTitleEl = document.getElementById('helpReshuffleTitle');
+  const helpReshuffleDescEl = document.getElementById('helpReshuffleDesc');
+  const helpBackTitleEl = document.getElementById('helpBackTitle');
+  const helpBackDescEl = document.getElementById('helpBackDesc');
+  const helpClearTitleEl = document.getElementById('helpClearTitle');
+  const helpClearDescEl = document.getElementById('helpClearDesc');
+  const footerTextEl = document.getElementById('footerText');
+  const langToggleBtn = document.getElementById('langToggle');
+
+  let lastAssignments = null; // 记录最近一次分配结果，供切换语言时原样重绘（不重新洗牌）
 
   function getPlayers(){
     return playerInput.value.split('\n').map(s => s.trim()).filter(Boolean);
@@ -512,11 +661,11 @@
     const issues = [];
     const dupes = findDuplicateNames(players);
     if (dupes.length){
-      issues.push(`名字重复：${dupes.join('、')}（同名会导致无法辨认是谁的身份卡）`);
+      issues.push(t().errDupNames(dupes));
     }
     const tooLong = players.filter(p => p.length > MAX_NAME_LENGTH);
     if (tooLong.length){
-      issues.push(`名字过长（超过 ${MAX_NAME_LENGTH} 个字符）：${tooLong.join('、')}`);
+      issues.push(t().errLongNames(MAX_NAME_LENGTH, tooLong));
     }
     return issues;
   }
@@ -525,14 +674,15 @@
     roleGrid.innerHTML = '';
     CONFIGURABLE.forEach(key => {
       const role = ROLES[key];
+      const name = roleName(key);
       const row = document.createElement('div');
       row.className = 'role-row';
       row.innerHTML = `
-        <span class="name"><span class="icon">${role.icon}</span>${role.name}</span>
+        <span class="name"><span class="icon">${role.icon}</span>${name}</span>
         <span class="stepper">
-          <button type="button" data-role="${key}" data-dir="-1" aria-label="减少${role.name}人数">−</button>
+          <button type="button" data-role="${key}" data-dir="-1" aria-label="${t().decreaseAria(name)}">−</button>
           <span class="val" id="val-${key}">${counts[key]}</span>
-          <button type="button" data-role="${key}" data-dir="1" aria-label="增加${role.name}人数">+</button>
+          <button type="button" data-role="${key}" data-dir="1" aria-label="${t().increaseAria(name)}">+</button>
         </span>`;
       roleGrid.appendChild(row);
     });
@@ -549,11 +699,11 @@
 
   function validate(){
     const players = getPlayers();
-    playerCountEl.textContent = players.length + ' 人';
+    playerCountEl.textContent = t().formatPlayerCount(players.length);
 
     const specialTotal = CONFIGURABLE.reduce((sum, k) => sum + counts[k], 0);
     const villagerTotal = players.length - specialTotal;
-    villagerCountEl.textContent = Math.max(villagerTotal, 0);
+    villagerCountEl.textContent = t().formatVillagerCount(Math.max(villagerTotal, 0));
 
     // 名单本身的问题（重复 / 过长），提示在名单下方
     const nameIssues = collectNameIssues(players);
@@ -570,21 +720,21 @@
     const requireVillager = requireVillagerToggle.checked;
 
     if (players.length < 4){
-      errorMsg.textContent = '至少需要 4 名玩家才能开始分配。';
+      errorMsg.textContent = t().errMinPlayers;
       errorMsg.classList.add('show');
       assignBtn.disabled = true;
     } else if (nameIssues.length){
       assignBtn.disabled = true;
     } else if (villagerTotal < 0){
-      errorMsg.textContent = `特殊角色共 ${specialTotal} 人，超过了玩家总数（${players.length} 人），请减少特殊角色数量。`;
+      errorMsg.textContent = t().errTooManySpecial(specialTotal, players.length);
       errorMsg.classList.add('show');
       assignBtn.disabled = true;
     } else if (counts.werewolf < 1){
-      errorMsg.textContent = '狼人至少需要 1 人。';
+      errorMsg.textContent = t().errMinWerewolf;
       errorMsg.classList.add('show');
       assignBtn.disabled = true;
     } else if (requireVillager && villagerTotal < 1){
-      errorMsg.textContent = '已开启"至少保留 1 名平民"规则，请减少特殊角色人数腾出至少 1 个平民名额。';
+      errorMsg.textContent = t().errRequireVillager;
       errorMsg.classList.add('show');
       assignBtn.disabled = true;
     }
@@ -593,8 +743,52 @@
 
   playerInput.addEventListener('input', validate);
   requireVillagerToggle.addEventListener('change', validate);
-  renderRoleGrid();
-  validate();
+
+  // 应用当前语言：刷新所有静态文案、角色配置区、校验提示，并原样重绘已展开的结果卡片
+  function applyLanguage(){
+    const s = t();
+    document.documentElement.lang = s.htmlLang;
+    pageTitleEl.textContent = s.pageTitle;
+    pageSubtitleEl.textContent = s.pageSubtitle;
+    playerListLabelEl.textContent = s.playerListLabel;
+    playerInput.placeholder = s.playerPlaceholder;
+    playerHintEl.textContent = s.playerHint;
+    roleConfigLabelEl.textContent = s.roleConfigLabel;
+    villagerRowLabelEl.textContent = s.villagerRowLabel;
+    requireVillagerLabelEl.textContent = s.requireVillagerLabel;
+    assignBtn.textContent = s.assignBtn;
+    resultHintEl.textContent = s.resultHint;
+    reshuffleBtnEl.textContent = s.reshuffleBtn;
+    backToSetupBtnEl.textContent = s.backToSetupBtn;
+    clearAllBtnEl.textContent = s.clearAllBtn;
+    helpSummaryEl.textContent = s.helpSummary;
+    helpReshuffleTitleEl.textContent = s.helpReshuffleTitle;
+    helpReshuffleDescEl.textContent = s.helpReshuffleDesc;
+    helpBackTitleEl.textContent = s.helpBackTitle;
+    helpBackDescEl.textContent = s.helpBackDesc;
+    helpClearTitleEl.textContent = s.helpClearTitle;
+    helpClearDescEl.textContent = s.helpClearDesc;
+    footerTextEl.textContent = s.footer;
+    langToggleBtn.textContent = s.langToggleLabel;
+    langToggleBtn.setAttribute('aria-label', s.langToggleAria);
+
+    renderRoleGrid();
+    validate();
+
+    // 若结果页当前正显示已分配的卡片，原样重绘（不重新洗牌），仅刷新语言
+    if (lastAssignments && resultScreenIsVisible()){
+      renderCards(lastAssignments);
+    }
+  }
+
+  function resultScreenIsVisible(){
+    return document.getElementById('resultScreen').style.display !== 'none';
+  }
+
+  langToggleBtn.addEventListener('click', () => {
+    currentLang = currentLang === 'zh' ? 'en' : 'zh';
+    applyLanguage();
+  });
 
   function shuffle(arr){
     const a = arr.slice();
@@ -641,7 +835,7 @@
 
   function updateCountdownText(btn, seconds){
     const el = btn.querySelector('.countdown');
-    if (el) el.textContent = `${seconds} 秒后盖回`;
+    if (el) el.textContent = t().formatCountdown(seconds);
   }
 
   // 展开一张卡片并启动限时倒计时，到时自动盖回
@@ -668,18 +862,18 @@
       const scene = document.createElement('div');
       scene.className = 'card-scene';
       scene.innerHTML = `
-        <button class="card-btn" aria-pressed="false" aria-label="查看 ${escapeHtml(name)} 的身份">
+        <button class="card-btn" aria-pressed="false" aria-label="${t().cardViewAria(escapeHtml(name))}">
           <div class="card-inner">
             <div class="card-face card-back">
               <div class="glyph">☾</div>
               <div class="pname">${escapeHtml(name)}</div>
-              <div class="tap">点击查看身份（5 秒后自动盖回）</div>
+              <div class="tap">${t().cardTap}</div>
             </div>
             <div class="card-face card-front" style="--role-color:${role.color}">
-              <div class="countdown">${AUTO_CLOSE_SECONDS} 秒后盖回</div>
+              <div class="countdown">${t().formatCountdown(AUTO_CLOSE_SECONDS)}</div>
               <div class="icon">${role.icon}</div>
-              <div class="rname">${role.name}</div>
-              <div class="rdesc">${role.desc}</div>
+              <div class="rname">${roleName(roleKey)}</div>
+              <div class="rdesc">${roleDesc(roleKey)}</div>
               <div class="rowner">${escapeHtml(name)}</div>
             </div>
           </div>
@@ -717,6 +911,7 @@
     const players = getPlayers();
     const deck = shuffle(buildRoleDeck(players.length));
     const assignments = players.map((name, i) => ({ name, roleKey: deck[i] }));
+    lastAssignments = assignments;
     renderCards(assignments);
     setupScreen.style.display = 'none';
     resultScreen.style.display = 'block';
@@ -731,7 +926,7 @@
   // 重新洗牌：沿用同一份名单和配置，立即重新随机分配
   document.getElementById('reshuffleBtn').addEventListener('click', () => {
     generateAndShowResults();
-    showToast('已重新洗牌');
+    showToast(t().toastReshuffled);
   });
 
   // 返回设置：仅切换界面，名单和角色配置原样保留
@@ -743,12 +938,13 @@
 
   // 清空全部：清空名单和角色配置，需二次确认防止误触
   document.getElementById('clearAllBtn').addEventListener('click', () => {
-    const confirmed = window.confirm('确定要清空所有名单和角色设置吗？此操作无法撤销。');
+    const confirmed = window.confirm(t().confirmClear);
     if (!confirmed) return;
     closeOpenCard(); // 同样清除展开状态与倒计时
     playerInput.value = '';
     counts.werewolf = 1; counts.seer = 1; counts.witch = 1; counts.hunter = 1;
     requireVillagerToggle.checked = false;
+    lastAssignments = null;
     renderRoleGrid();
     resultScreen.style.display = 'none';
     setupScreen.style.display = 'block';
@@ -760,6 +956,8 @@
     div.textContent = str;
     return div.innerHTML;
   }
+
+  applyLanguage(); // 初始化界面文案、角色配置区与校验状态
 </script>
 </body>
 </html>
