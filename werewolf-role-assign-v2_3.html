@@ -135,7 +135,7 @@
     padding: 12px 14px;
     background: rgba(255,255,255,0.015);
   }
-  .role-row .name{ font-size: 14.5px; }
+  .role-row .name{ font-size: 14.5px; min-width:0; overflow-wrap:anywhere; padding-right:8px; }
   .role-row .name .icon{ margin-right: 8px; }
 
   .stepper{ display:flex; align-items:center; gap: 10px; }
@@ -153,6 +153,57 @@
   }
   .stepper button:hover{ border-color: var(--gold-dim); color: var(--gold); }
   .stepper .val{ min-width: 16px; text-align:center; font-variant-numeric: tabular-nums; }
+
+  .role-row .remove-btn{
+    background:none; border:0; padding:0;
+    margin-left:8px; width:22px; height:22px;
+    display:inline-flex; align-items:center; justify-content:center;
+    border-radius:50%; color:var(--ink-dim); font-size:15px; line-height:1;
+    vertical-align:middle; cursor:pointer;
+  }
+  .role-row .remove-btn:hover{ color:#f0a3a3; background:rgba(168,58,58,0.18); }
+
+  .add-role{ margin-top:12px; }
+  .add-role-btn{
+    width:100%; padding:11px;
+    background:transparent;
+    border:1px dashed var(--border-strong);
+    border-radius:8px;
+    color:var(--ink-dim);
+    font-family:'Manrope', sans-serif; font-size:13.5px;
+    cursor:pointer;
+  }
+  .add-role-btn:hover{ border-color:var(--gold-dim); color:var(--gold); }
+  .add-role-form{ display:none; flex-direction:column; gap:8px; }
+  .add-role.editing .add-role-form{ display:flex; }
+  .add-role.editing .add-role-btn{ display:none; }
+  .add-role-form input{
+    width:100%; min-width:0;
+    background:rgba(0,0,0,0.25);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--ink);
+    font-family:'Manrope', sans-serif; font-size:16px;
+    padding:10px 12px;
+  }
+  .add-role-form input:focus{ outline:2px solid var(--gold-dim); outline-offset:2px; }
+  .add-role-form input::placeholder{ color:#4d5666; }
+  .add-role-form .ghost-btn{ white-space:nowrap; padding:10px 14px; flex:1; }
+  .camp-pick, .add-role-actions{ display:flex; gap:8px; }
+  .camp-hint{ font-size:12.5px; color:var(--ink-dim); margin-top:2px; }
+  .camp-opt{
+    flex:1; padding:9px 10px;
+    background:transparent;
+    border:1px solid var(--border-strong);
+    border-radius:8px;
+    color:var(--ink);
+    font-family:'Manrope', sans-serif; font-size:13.5px;
+    cursor:pointer;
+  }
+  .camp-opt:not(.selected):hover{ border-color:var(--gold-dim); color:var(--gold); }
+  .camp-opt.selected[data-camp="wolf"]{ border-color:#e0463f; color:#e0463f; background:rgba(224,70,63,0.12); }
+  .camp-opt.selected[data-camp="good"]{ border-color:#f2c531; color:#f2c531; background:rgba(242,197,49,0.12); }
+  .add-role .error{ margin-top:10px; }
 
   .villager-row{
     margin-top: 12px;
@@ -337,7 +388,10 @@
     font-weight: 600;
     color: var(--role-color, #eef1f6);
     margin-bottom: 8px;
+    overflow-wrap: anywhere;
+    line-height: 1.15;
   }
+  .card-front .rname.long{ font-size: 18px; }
   .card-front .rdesc{ font-size: 11.5px; line-height:1.5; color: var(--ink-dim); }
   .card-front .rowner{
     font-size: 11px;
@@ -451,6 +505,23 @@
 
       <div class="role-grid" id="roleGrid"></div>
 
+      <div class="add-role" id="addRole">
+        <button type="button" class="add-role-btn" id="addRoleBtn">＋ 自定义角色</button>
+        <div class="add-role-form">
+          <input type="text" id="customRoleInput" maxlength="12" autocomplete="off" autocapitalize="off" enterkeyhint="done">
+          <div class="camp-hint" id="campHint">阵营（默认：好人阵营）</div>
+          <div class="camp-pick" id="campPick" role="radiogroup">
+            <button type="button" class="camp-opt" id="campWolfBtn" data-camp="wolf" role="radio" aria-checked="false">狼人阵营</button>
+            <button type="button" class="camp-opt selected" id="campGoodBtn" data-camp="good" role="radio" aria-checked="true">好人阵营</button>
+          </div>
+          <div class="add-role-actions">
+            <button type="button" class="ghost-btn" id="customRoleConfirm">添加</button>
+            <button type="button" class="ghost-btn" id="customRoleCancel">取消</button>
+          </div>
+        </div>
+        <p class="error" id="customRoleError"></p>
+      </div>
+
       <div class="villager-row">
         <span id="villagerRowLabel">剩余自动分配为「平民」</span>
         <b id="villagerCount">0 人</b>
@@ -495,27 +566,68 @@
 
 <script>
   const ROLES = {
-    werewolf: { icon:'🐺', color:'#c1585c',
+    werewolf: { icon:'🐺', color:'#e0463f',
       name:{ zh:'狼人', en:'Werewolf' },
       desc:{ zh:'夜晚苏醒，与同伴共同猎杀一名玩家。', en:'Wake at night and hunt a player together with your pack.' } },
-    seer: { icon:'🔮', color:'#c9a227',
+    seer: { icon:'🔮', color:'#f2c531',
       name:{ zh:'预言家', en:'Seer' },
       desc:{ zh:'每晚可查验一名玩家的真实身份。', en:"Each night, inspect one player's true identity." } },
-    witch: { icon:'🧪', color:'#c9a227',
+    witch: { icon:'🧪', color:'#f2c531',
       name:{ zh:'女巫', en:'Witch' },
       desc:{ zh:'持解药与毒药各一瓶，整局限用一次。', en:'Holds one healing potion and one poison, each usable once per game.' } },
-    hunter: { icon:'🏹', color:'#c9a227',
+    hunter: { icon:'🏹', color:'#f2c531',
       name:{ zh:'猎人', en:'Hunter' },
       desc:{ zh:'出局时可开枪带走场上一名玩家。', en:'When eliminated, may shoot and take another player down.' } },
+    hiddenWolf: { icon:'🎭', color:'#e0463f',
+      name:{ zh:'隐狼', en:'Hidden Wolf' },
+      desc:{ zh:'属于狼人阵营。预言家查验时，会显示为好人。', en:'Belongs to the werewolf team. Appears as a good player when inspected by the Seer.' } },
+    guard: { icon:'🛡️', color:'#f2c531',
+      name:{ zh:'守卫', en:'Guard' },
+      desc:{ zh:'每晚守护一名玩家，使其不被狼人刀杀；不可连续两晚守护同一人。', en:'Each night, protect one player from the werewolves; cannot guard the same player two nights in a row.' } },
+    fool: { icon:'🃏', color:'#f2c531',
+      name:{ zh:'白痴', en:'Fool' },
+      desc:{ zh:'被投票放逐时可翻牌免死，但此后失去投票权。', en:'If voted out, may reveal to survive, but loses the right to vote afterward.' } },
     villager: { icon:'🕯️', color:'#c9d3e0',
       name:{ zh:'平民', en:'Villager' },
       desc:{ zh:'没有技能，靠观察与发言找出狼人。', en:'No special power — find the werewolves through observation and discussion.' } }
   };
   // 显示顺序：特殊角色在前，平民固定在最后自动计算
-  const CONFIGURABLE = ['werewolf', 'seer', 'witch', 'hunter'];
-  const counts = { werewolf: 1, seer: 1, witch: 1, hunter: 1 };
+  // 阵营：只有 狼人阵营（红）与 好人阵营（黄）；平民保留原来的颜色
+  const CAMP_COLOR = { wolf: '#e0463f', good: '#f2c531' };
+  Object.keys(ROLES).forEach(k => {
+    ROLES[k].camp = (k === 'werewolf' || k === 'hiddenWolf') ? 'wolf' : 'good';
+    if (k !== 'villager') ROLES[k].color = CAMP_COLOR[ROLES[k].camp];
+  });
+  const CONFIGURABLE = ['werewolf', 'hiddenWolf', 'seer', 'witch', 'hunter', 'guard', 'fool'];
+  const counts = { werewolf: 1, hiddenWolf: 1, seer: 1, witch: 1, hunter: 1, guard: 1, fool: 1 };
   const MAX_NAME_LENGTH = 16;
   const AUTO_CLOSE_SECONDS = 5;
+
+  // ---------- 自定义角色 ----------
+  const MAX_ROLE_NAME_LENGTH = 12;
+  const CUSTOM_ROLE_ICON = '✦';
+  const customRoleKeys = [];
+  let customRoleSeq = 0;
+
+  // 与内置角色（中英文名）及已添加的自定义角色比对，忽略大小写
+  function roleNameTaken(name){
+    const lower = name.toLowerCase();
+    return Object.keys(ROLES).some(k =>
+      ROLES[k].name.zh.toLowerCase() === lower || ROLES[k].name.en.toLowerCase() === lower);
+  }
+  function addCustomRole(name, camp){
+    const key = 'custom_' + (++customRoleSeq);
+    ROLES[key] = { icon: CUSTOM_ROLE_ICON, color: CAMP_COLOR[camp], camp, custom: true, name:{ zh:name, en:name } };
+    CONFIGURABLE.push(key);
+    customRoleKeys.push(key);
+    counts[key] = 1;
+  }
+  function removeCustomRole(key){
+    delete ROLES[key];
+    delete counts[key];
+    CONFIGURABLE.splice(CONFIGURABLE.indexOf(key), 1);
+    customRoleKeys.splice(customRoleKeys.indexOf(key), 1);
+  }
 
   // ---------- 中英文界面文案 ----------
   const STRINGS = {
@@ -555,10 +667,23 @@
       langToggleAria: '切换到英文显示',
       errMinPlayers: '至少需要 4 名玩家才能开始分配。',
       errTooManySpecial: (specialTotal, playerCount) => `特殊角色共 ${specialTotal} 人，超过了玩家总数（${playerCount} 人），请减少特殊角色数量。`,
-      errMinWerewolf: '狼人至少需要 1 人。',
+      errMinWerewolf: '狼人阵营至少需要 1 人（狼人、隐狼，或狼人阵营的自定义角色）。',
       errRequireVillager: '已开启"至少保留 1 名平民"规则，请减少特殊角色人数腾出至少 1 个平民名额。',
       errDupNames: (names) => `名字重复：${names.join('、')}（同名会导致无法辨认是谁的身份卡）`,
-      errLongNames: (max, names) => `名字过长（超过 ${max} 个字符）：${names.join('、')}`
+      errLongNames: (max, names) => `名字过长（超过 ${max} 个字符）：${names.join('、')}`,
+      customRoleBtn: '＋ 自定义角色',
+      customRolePlaceholder: '输入角色名，例如：守卫',
+      customRoleConfirm: '添加',
+      customRoleCancel: '取消',
+      customRoleDesc: (camp) => `${camp}自定义角色，具体技能按你们的规则来。`,
+      campWolf: '狼人阵营',
+      campGood: '好人阵营',
+      campPickAria: '选择阵营',
+      campHint: (def) => `阵营（默认：${def}）`,
+      removeCustomAria: (name) => `删除自定义角色${name}`,
+      errCustomEmpty: '请输入角色名。',
+      errCustomDup: (name) => `已存在名为「${name}」的角色。`,
+      toastCustomAdded: (name) => `已添加角色：${name}`
     },
     en: {
       htmlLang: 'en',
@@ -596,17 +721,34 @@
       langToggleAria: '切换到中文显示',
       errMinPlayers: 'You need at least 4 players to start.',
       errTooManySpecial: (specialTotal, playerCount) => `Special roles total ${specialTotal}, more than the ${playerCount} players. Please reduce special role counts.`,
-      errMinWerewolf: 'At least 1 Werewolf is required.',
+      errMinWerewolf: 'At least 1 player on the Werewolf Team is required (Werewolf, Hidden Wolf, or a wolf-team custom role).',
       errRequireVillager: '"Keep at least 1 Villager" is on — reduce special role counts to free up a Villager slot.',
       errDupNames: (names) => `Duplicate names: ${names.join(', ')} (identical names make it impossible to tell whose card is whose)`,
-      errLongNames: (max, names) => `Names too long (over ${max} characters): ${names.join(', ')}`
+      errLongNames: (max, names) => `Names too long (over ${max} characters): ${names.join(', ')}`,
+      customRoleBtn: '＋ Custom role',
+      customRolePlaceholder: 'Role name, e.g. Guard',
+      customRoleConfirm: 'Add',
+      customRoleCancel: 'Cancel',
+      customRoleDesc: (camp) => `Custom role (${camp}) — follow your table's own rules.`,
+      campWolf: 'Werewolf Team',
+      campGood: 'Village Team',
+      campPickAria: 'Choose a team',
+      campHint: (def) => `Team (default: ${def})`,
+      removeCustomAria: (name) => `Remove custom role ${name}`,
+      errCustomEmpty: 'Please enter a role name.',
+      errCustomDup: (name) => `A role named "${name}" already exists.`,
+      toastCustomAdded: (name) => `Role added: ${name}`
     }
   };
 
   let currentLang = 'zh';
   function t(){ return STRINGS[currentLang]; }
   function roleName(key){ return ROLES[key].name[currentLang]; }
-  function roleDesc(key){ return ROLES[key].desc[currentLang]; }
+  function roleDesc(key){
+    const r = ROLES[key];
+    if (r.custom) return t().customRoleDesc(r.camp === 'wolf' ? t().campWolf : t().campGood);
+    return r.desc[currentLang];
+  }
 
   const playerInput = document.getElementById('playerInput');
   const playerCountEl = document.getElementById('playerCount');
@@ -678,15 +820,22 @@
       const row = document.createElement('div');
       row.className = 'role-row';
       row.innerHTML = `
-        <span class="name"><span class="icon">${role.icon}</span>${name}</span>
+        <span class="name"><span class="icon"${role.custom ? ` style="color:${role.color}"` : ''}>${role.icon}</span>${escapeHtml(name)}${role.custom ? `<button type="button" class="remove-btn" data-remove="${key}" aria-label="${escapeHtml(t().removeCustomAria(name))}">×</button>` : ''}</span>
         <span class="stepper">
-          <button type="button" data-role="${key}" data-dir="-1" aria-label="${t().decreaseAria(name)}">−</button>
+          <button type="button" data-role="${key}" data-dir="-1" aria-label="${escapeHtml(t().decreaseAria(name))}">−</button>
           <span class="val" id="val-${key}">${counts[key]}</span>
-          <button type="button" data-role="${key}" data-dir="1" aria-label="${t().increaseAria(name)}">+</button>
+          <button type="button" data-role="${key}" data-dir="1" aria-label="${escapeHtml(t().increaseAria(name))}">+</button>
         </span>`;
       roleGrid.appendChild(row);
     });
-    roleGrid.querySelectorAll('button').forEach(btn => {
+    roleGrid.querySelectorAll('.remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        removeCustomRole(btn.dataset.remove);
+        renderRoleGrid();
+        validate();
+      });
+    });
+    roleGrid.querySelectorAll('.stepper button').forEach(btn => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.role;
         const dir = parseInt(btn.dataset.dir, 10);
@@ -703,6 +852,8 @@
 
     const specialTotal = CONFIGURABLE.reduce((sum, k) => sum + counts[k], 0);
     const villagerTotal = players.length - specialTotal;
+    // 狼人阵营人数 = 狼人 + 隐狼 + 狼人阵营的自定义角色
+    const wolfTotal = CONFIGURABLE.reduce((sum, k) => sum + (ROLES[k].camp === 'wolf' ? counts[k] : 0), 0);
     villagerCountEl.textContent = t().formatVillagerCount(Math.max(villagerTotal, 0));
 
     // 名单本身的问题（重复 / 过长），提示在名单下方
@@ -729,7 +880,7 @@
       errorMsg.textContent = t().errTooManySpecial(specialTotal, players.length);
       errorMsg.classList.add('show');
       assignBtn.disabled = true;
-    } else if (counts.werewolf < 1){
+    } else if (wolfTotal < 1){
       errorMsg.textContent = t().errMinWerewolf;
       errorMsg.classList.add('show');
       assignBtn.disabled = true;
@@ -740,6 +891,61 @@
     }
     return !assignBtn.disabled;
   }
+
+  // ---------- 自定义角色：添加表单 ----------
+  const addRoleEl = document.getElementById('addRole');
+  const addRoleBtn = document.getElementById('addRoleBtn');
+  const customRoleInput = document.getElementById('customRoleInput');
+  const customRoleConfirm = document.getElementById('customRoleConfirm');
+  const customRoleCancel = document.getElementById('customRoleCancel');
+  const customRoleError = document.getElementById('customRoleError');
+
+  const campBtns = document.querySelectorAll('.camp-opt');
+  let customCamp = 'good';
+  function setCustomCamp(camp){
+    customCamp = camp;
+    campBtns.forEach(b => {
+      const on = b.dataset.camp === camp;
+      b.classList.toggle('selected', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  }
+  campBtns.forEach(b => b.addEventListener('click', () => setCustomCamp(b.dataset.camp)));
+
+  function showCustomRoleError(msg){
+    customRoleError.textContent = msg;
+    customRoleError.classList.add('show');
+  }
+  function openAddRole(){
+    addRoleEl.classList.add('editing');
+    customRoleInput.value = '';
+    setCustomCamp('good');
+    customRoleError.classList.remove('show');
+    customRoleInput.focus();
+  }
+  function closeAddRole(){
+    addRoleEl.classList.remove('editing');
+    customRoleError.classList.remove('show');
+  }
+  function submitCustomRole(){
+    const name = customRoleInput.value.trim().replace(/\s+/g, ' ').slice(0, MAX_ROLE_NAME_LENGTH);
+    if (!name){ showCustomRoleError(t().errCustomEmpty); return; }
+    if (roleNameTaken(name)){ showCustomRoleError(t().errCustomDup(name)); return; }
+    addCustomRole(name, customCamp);
+    closeAddRole();
+    renderRoleGrid();
+    validate();
+    showToast(t().toastCustomAdded(name));
+  }
+  addRoleBtn.addEventListener('click', openAddRole);
+  customRoleConfirm.addEventListener('click', submitCustomRole);
+  customRoleCancel.addEventListener('click', closeAddRole);
+  customRoleInput.addEventListener('input', () => customRoleError.classList.remove('show'));
+  customRoleInput.addEventListener('keydown', (e) => {
+    if (e.isComposing || e.keyCode === 229) return; // 输入法选词时的回车不算提交
+    if (e.key === 'Enter'){ e.preventDefault(); submitCustomRole(); }
+    else if (e.key === 'Escape'){ closeAddRole(); }
+  });
 
   playerInput.addEventListener('input', validate);
   requireVillagerToggle.addEventListener('change', validate);
@@ -771,6 +977,15 @@
     footerTextEl.textContent = s.footer;
     langToggleBtn.textContent = s.langToggleLabel;
     langToggleBtn.setAttribute('aria-label', s.langToggleAria);
+    addRoleBtn.textContent = s.customRoleBtn;
+    customRoleInput.placeholder = s.customRolePlaceholder;
+    customRoleConfirm.textContent = s.customRoleConfirm;
+    customRoleCancel.textContent = s.customRoleCancel;
+    document.getElementById('campWolfBtn').textContent = s.campWolf;
+    document.getElementById('campGoodBtn').textContent = s.campGood;
+    document.getElementById('campPick').setAttribute('aria-label', s.campPickAria);
+    document.getElementById('campHint').textContent = s.campHint(s.campGood);
+    customRoleError.classList.remove('show');
 
     renderRoleGrid();
     validate();
@@ -872,7 +1087,7 @@
             <div class="card-face card-front" style="--role-color:${role.color}">
               <div class="countdown">${t().formatCountdown(AUTO_CLOSE_SECONDS)}</div>
               <div class="icon">${role.icon}</div>
-              <div class="rname">${roleName(roleKey)}</div>
+              <div class="rname${role.custom && roleName(roleKey).length > 5 ? ' long' : ''}">${escapeHtml(roleName(roleKey))}</div>
               <div class="rdesc">${roleDesc(roleKey)}</div>
               <div class="rowner">${escapeHtml(name)}</div>
             </div>
@@ -942,7 +1157,9 @@
     if (!confirmed) return;
     closeOpenCard(); // 同样清除展开状态与倒计时
     playerInput.value = '';
-    counts.werewolf = 1; counts.seer = 1; counts.witch = 1; counts.hunter = 1;
+    customRoleKeys.slice().forEach(removeCustomRole); // 自定义角色一并清除
+    closeAddRole();
+    CONFIGURABLE.forEach(k => { counts[k] = 1; }); // 此时自定义角色已移除，只剩内置角色
     requireVillagerToggle.checked = false;
     lastAssignments = null;
     renderRoleGrid();
@@ -954,7 +1171,7 @@
   function escapeHtml(str){
     const div = document.createElement('div');
     div.textContent = str;
-    return div.innerHTML;
+    return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;'); // 同时转义引号，防止破坏 aria-label 等属性
   }
 
   applyLanguage(); // 初始化界面文案、角色配置区与校验状态
